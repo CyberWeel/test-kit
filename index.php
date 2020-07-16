@@ -2,43 +2,29 @@
 # Подключение базы данных
 # require_once $_SERVER['DOCUMENT_ROOT'].'/pdo.php';
 
-$url = 'https://www.somehost.com/test/index.html?param1=4&param2=3&param3=2&param4=1&param5=3';
-$url = cleanURL($url);
-
-function cleanURL(string $url) :string {
-  $url = parse_url($url);
-  $protocol = $url['scheme'];
-  $host = $url['host'];
-  $path = $url['path'];
-  $query = $url['query'];
-  $workingQuery = [];
-  $tempQuery = [];
-
-  # Очищаем строку запроса от параметров со значением 3
-  foreach (explode('&', $query) as $pair) {
-    $param = explode('=', $pair);
-
-    if ($param[1] != 3) {
-      $workingQuery += [$param[0] => $param[1]];
-    }
+function load_users_data($user_ids) {
+  $user_ids = explode(',', $user_ids);
+  foreach ($user_ids as $user_id) {
+      $db = mysqli_connect("localhost", "root", "123123", "database");
+      $sql = mysqli_query($db, "SELECT * FROM users WHERE id=$user_id");
+      while($obj = $sql->fetch_object()){
+          $data[$user_id] = $obj->name;
+      }
+      mysqli_close($db);
   }
-
-  # Сортируем значения
-  asort($workingQuery);
-
-  # Формируем строку запроса заново
-  foreach ($workingQuery as $key => $value) {
-    array_push($tempQuery, $key.'='.$value);
-  }
-
-  $query = $protocol.'://'.$host.'/?';
-  $query .= implode('&', $tempQuery);
-  $query .= '&url='.urlencode($path);
-
-  # Надо было сделать тут header("Location: $protocol://$host/") ?
-
-  return htmlspecialchars($query);
+  return $data;
 }
+
+$data = load_users_data($_GET['user_ids']);
+foreach ($data as $user_id=>$name) {
+  echo "<a href=\"/show_user.php?id=$user_id\">$name</a>";
+}
+# По мне так лучше использовать PDO для безопасности
+# Вывод нужно очистить
+
+# Указать ожидаемый тип
+# Подключение снаружи. Верный ли порядок данных?
+# Проверить все строки
 ?>
 <!DOCTYPE html>
 <html lang="ru">

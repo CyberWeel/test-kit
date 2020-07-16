@@ -1,28 +1,44 @@
 <?php
 # Подключение базы данных
-require_once $_SERVER['DOCUMENT_ROOT'].'/pdo.php';
+# require_once $_SERVER['DOCUMENT_ROOT'].'/pdo.php';
 
-$gender = 2;
-$minAge = 18;
-$maxAge = 22;
-$minAgeTimestamp = $minAge * 365 * 24 * 60 * 60;
-$maxAgeTimestamp = $maxAge * 365 * 24 * 60 * 60;
+$url = 'https://www.somehost.com/test/index.html?param1=4&param2=3&param3=2&param4=1&param5=3';
+$url = cleanURL($url);
 
-/* Просто возвращение строк с девушками
-$sql = "SELECT *
-  FROM users, phone_numbers
-  WHERE users.gender = $gender
-    AND (((NOW() - users.birth_date) >= $minAgeTimestamp)
-      OR ((NOW() - users.birth_date) <= $maxAgeTimestamp))";
-*/
+function cleanURL(string $url) :string {
+  $url = parse_url($url);
+  $protocol = $url['scheme'];
+  $host = $url['host'];
+  $path = $url['path'];
+  $query = $url['query'];
+  $workingQuery = [];
+  $tempQuery = [];
 
-$sql = "SELECT users.name, COUNT(phone_numbers.user_id) as quantity
-  FROM users, phone_numbers
-  WHERE users.id = phone_numbers.user_id
-    AND users.gender = $gender
-    AND (((NOW() - users.birth_date) >= $minAgeTimestamp)
-      OR ((NOW() - users.birth_date) <= $maxAgeTimestamp))
-  GROUP BY phone_numbers.user_id";
+  # Очищаем строку запроса от параметров со значением 3
+  foreach (explode('&', $query) as $pair) {
+    $param = explode('=', $pair);
+
+    if ($param[1] != 3) {
+      $workingQuery += [$param[0] => $param[1]];
+    }
+  }
+
+  # Сортируем значения
+  asort($workingQuery);
+
+  # Формируем строку запроса заново
+  foreach ($workingQuery as $key => $value) {
+    array_push($tempQuery, $key.'='.$value);
+  }
+
+  $query = $protocol.'://'.$host.'/?';
+  $query .= implode('&', $tempQuery);
+  $query .= '&url='.urlencode($path);
+
+  # Надо было сделать тут header("Location: $protocol://$host/") ?
+
+  return htmlspecialchars($query);
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -32,23 +48,6 @@ $sql = "SELECT users.name, COUNT(phone_numbers.user_id) as quantity
   <title>Главная страница</title>
 </head>
 <body>
-  <table>
-    <thead>
-      <tr>
-        <th>Имя</th>
-        <th>Количество телефонных номеров</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php
-      foreach ($connection->query($sql) as $row) {
-        echo '<tr>';
-        echo '<td>'.$row['name'].'</td>';
-        echo '<td>'.$row['quantity'].'</td>';
-        echo '</tr>';
-      }
-      ?>
-    </tbody>
-  </table>
+
 </body>
 </html>
